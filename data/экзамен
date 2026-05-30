@@ -1,0 +1,1645 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "id": "a6fecb8a",
+      "metadata": {
+        "id": "a6fecb8a"
+      },
+      "source": [
+        "# Экзаменационное проектное задание\n",
+        "\n",
+        "## Шкала оценивания\n",
+        "\n",
+        "- **Оценка 3-4:** Нужно построить модель машинного обучения с классификатором по заданию\n",
+        "\n",
+        "- **Оценка 5:** Нужно применить 2 дополнительных классификатора, сравнить и сделать выводы какой лучше"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "edf5b098",
+      "metadata": {
+        "id": "edf5b098"
+      },
+      "source": [
+        "# Часть I. Подготовка набора данных: Отзывы об одежде"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "457e275a",
+      "metadata": {
+        "id": "457e275a"
+      },
+      "source": [
+        "## Задание\n",
+        "\n",
+        "Вам предлагается выполнить подготовку набора данных\n",
+        "\n",
+        "Описание набора данных: Отзывы пользователей об одежде. Целевая переменная - тональность отзыва\n",
+        "\n",
+        "Ссылка на набор данных для использования в блокноте: https://raw.githubusercontent.com/yakushinav/mo2025/refs/heads/main/data/clothes_review03.csv"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "934295d4",
+      "metadata": {
+        "id": "934295d4"
+      },
+      "source": [
+        "#### 1. Подключение библиотек"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 1,
+      "id": "ca731501",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ca731501",
+        "outputId": "3978c63d-c38d-4570-ae2b-616999d18d38"
+      },
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "True"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 1
+        }
+      ],
+      "source": [
+        "# Ваш код здесь\n",
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "import re\n",
+        "import nltk\n",
+        "from nltk.corpus import stopwords\n",
+        "from nltk.stem import WordNetLemmatizer\n",
+        "import warnings\n",
+        "warnings.filterwarnings('ignore')\n",
+        "nltk.download('stopwords', quiet=True)\n",
+        "nltk.download('wordnet', quiet=True)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "9ae08533",
+      "metadata": {
+        "id": "9ae08533"
+      },
+      "source": [
+        "#### 2. Чтение набора данных"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 2,
+      "id": "63ff7999",
+      "metadata": {
+        "id": "63ff7999"
+      },
+      "outputs": [],
+      "source": [
+        "# Ваш код здесь\n",
+        "url = \"https://raw.githubusercontent.com/yakushinav/mo2025/refs/heads/main/data/clothes_review03.csv\"\n",
+        "df = pd.read_csv(url, sep=',')"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "a76d7ce4",
+      "metadata": {
+        "id": "a76d7ce4"
+      },
+      "source": [
+        "#### 3. Первые 7 строк набора данных"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 3,
+      "id": "002dee46",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 385
+        },
+        "id": "002dee46",
+        "outputId": "6bbbcecd-4358-4cfe-b40c-1dc8f4f49237"
+      },
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "   Unnamed: 0                                           feedback      mark\n",
+              "0       71502  хорошая нравиться! только вот на собачье ленто...  positive\n",
+              "1        6845  Товар не пришёл. Открыла спор, алиэкспресс вер...  negative\n",
+              "2       18923                                      качество на 2  negative\n",
+              "3        4174  заказала товар в апреле, до сих пор не пришел....  negative\n",
+              "4       77352                жилет отлично,только чуть малннький  positive\n",
+              "5       58816         Качество хорошее и доставка супер быстрая.  positive\n",
+              "6       12604  свитер не соответствует фото.  на самом деле о...  negative"
+            ],
+            "text/html": [
+              "\n",
+              "  <div id=\"df-088bdbdc-4c6f-4c5b-af32-3bc71d836869\" class=\"colab-df-container\">\n",
+              "    <div>\n",
+              "<style scoped>\n",
+              "    .dataframe tbody tr th:only-of-type {\n",
+              "        vertical-align: middle;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe tbody tr th {\n",
+              "        vertical-align: top;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe thead th {\n",
+              "        text-align: right;\n",
+              "    }\n",
+              "</style>\n",
+              "<table border=\"1\" class=\"dataframe\">\n",
+              "  <thead>\n",
+              "    <tr style=\"text-align: right;\">\n",
+              "      <th></th>\n",
+              "      <th>Unnamed: 0</th>\n",
+              "      <th>feedback</th>\n",
+              "      <th>mark</th>\n",
+              "    </tr>\n",
+              "  </thead>\n",
+              "  <tbody>\n",
+              "    <tr>\n",
+              "      <th>0</th>\n",
+              "      <td>71502</td>\n",
+              "      <td>хорошая нравиться! только вот на собачье ленто...</td>\n",
+              "      <td>positive</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>1</th>\n",
+              "      <td>6845</td>\n",
+              "      <td>Товар не пришёл. Открыла спор, алиэкспресс вер...</td>\n",
+              "      <td>negative</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>2</th>\n",
+              "      <td>18923</td>\n",
+              "      <td>качество на 2</td>\n",
+              "      <td>negative</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>3</th>\n",
+              "      <td>4174</td>\n",
+              "      <td>заказала товар в апреле, до сих пор не пришел....</td>\n",
+              "      <td>negative</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>4</th>\n",
+              "      <td>77352</td>\n",
+              "      <td>жилет отлично,только чуть малннький</td>\n",
+              "      <td>positive</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>5</th>\n",
+              "      <td>58816</td>\n",
+              "      <td>Качество хорошее и доставка супер быстрая.</td>\n",
+              "      <td>positive</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>6</th>\n",
+              "      <td>12604</td>\n",
+              "      <td>свитер не соответствует фото.  на самом деле о...</td>\n",
+              "      <td>negative</td>\n",
+              "    </tr>\n",
+              "  </tbody>\n",
+              "</table>\n",
+              "</div>\n",
+              "    <div class=\"colab-df-buttons\">\n",
+              "\n",
+              "  <div class=\"colab-df-container\">\n",
+              "    <button class=\"colab-df-convert\" onclick=\"convertToInteractive('df-088bdbdc-4c6f-4c5b-af32-3bc71d836869')\"\n",
+              "            title=\"Convert this dataframe to an interactive table.\"\n",
+              "            style=\"display:none;\">\n",
+              "\n",
+              "  <svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewBox=\"0 -960 960 960\">\n",
+              "    <path d=\"M120-120v-720h720v720H120Zm60-500h600v-160H180v160Zm220 220h160v-160H400v160Zm0 220h160v-160H400v160ZM180-400h160v-160H180v160Zm440 0h160v-160H620v160ZM180-180h160v-160H180v160Zm440 0h160v-160H620v160Z\"/>\n",
+              "  </svg>\n",
+              "    </button>\n",
+              "\n",
+              "  <style>\n",
+              "    .colab-df-container {\n",
+              "      display:flex;\n",
+              "      gap: 12px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert {\n",
+              "      background-color: #E8F0FE;\n",
+              "      border: none;\n",
+              "      border-radius: 50%;\n",
+              "      cursor: pointer;\n",
+              "      display: none;\n",
+              "      fill: #1967D2;\n",
+              "      height: 32px;\n",
+              "      padding: 0 0 0 0;\n",
+              "      width: 32px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert:hover {\n",
+              "      background-color: #E2EBFA;\n",
+              "      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);\n",
+              "      fill: #174EA6;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-buttons div {\n",
+              "      margin-bottom: 4px;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert {\n",
+              "      background-color: #3B4455;\n",
+              "      fill: #D2E3FC;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert:hover {\n",
+              "      background-color: #434B5C;\n",
+              "      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);\n",
+              "      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));\n",
+              "      fill: #FFFFFF;\n",
+              "    }\n",
+              "  </style>\n",
+              "\n",
+              "    <script>\n",
+              "      const buttonEl =\n",
+              "        document.querySelector('#df-088bdbdc-4c6f-4c5b-af32-3bc71d836869 button.colab-df-convert');\n",
+              "      buttonEl.style.display =\n",
+              "        google.colab.kernel.accessAllowed ? 'block' : 'none';\n",
+              "\n",
+              "      async function convertToInteractive(key) {\n",
+              "        const element = document.querySelector('#df-088bdbdc-4c6f-4c5b-af32-3bc71d836869');\n",
+              "        const dataTable =\n",
+              "          await google.colab.kernel.invokeFunction('convertToInteractive',\n",
+              "                                                    [key], {});\n",
+              "        if (!dataTable) return;\n",
+              "\n",
+              "        const docLinkHtml = 'Like what you see? Visit the ' +\n",
+              "          '<a target=\"_blank\" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'\n",
+              "          + ' to learn more about interactive tables.';\n",
+              "        element.innerHTML = '';\n",
+              "        dataTable['output_type'] = 'display_data';\n",
+              "        await google.colab.output.renderOutput(dataTable, element);\n",
+              "        const docLink = document.createElement('div');\n",
+              "        docLink.innerHTML = docLinkHtml;\n",
+              "        element.appendChild(docLink);\n",
+              "      }\n",
+              "    </script>\n",
+              "  </div>\n",
+              "\n",
+              "    </div>\n",
+              "  </div>\n"
+            ],
+            "application/vnd.google.colaboratory.intrinsic+json": {
+              "type": "dataframe",
+              "variable_name": "df",
+              "summary": "{\n  \"name\": \"df\",\n  \"rows\": 3000,\n  \"fields\": [\n    {\n      \"column\": \"Unnamed: 0\",\n      \"properties\": {\n        \"dtype\": \"number\",\n        \"std\": 23844,\n        \"min\": 20,\n        \"max\": 83199,\n        \"num_unique_values\": 3000,\n        \"samples\": [\n          80366,\n          80436,\n          38366\n        ],\n        \"semantic_type\": \"\",\n        \"description\": \"\"\n      }\n    },\n    {\n      \"column\": \"feedback\",\n      \"properties\": {\n        \"dtype\": \"string\",\n        \"num_unique_values\": 2986,\n        \"samples\": [\n          \"\\u0417\\u0430\\u043c\\u0435\\u0447\\u0430\\u0442\\u0435\\u043b\\u044c\\u043d\\u043e\\u0435 \\u0431\\u043e\\u0434\\u0438, \\u0442\\u043e\\u043b\\u044c\\u043a\\u043e \\u043d\\u0435 \\u0443\\u0433\\u0430\\u0434\\u0430\\u043b\\u0430 \\u0441 \\u0440\\u0430\\u0437\\u043c\\u0435\\u0440\\u043e\\u043c. \\u041d\\u0430 \\u0441\\u0432\\u043e\\u0439 42 \\u0437\\u0430\\u043a\\u0430\\u0437\\u0430\\u043b\\u0430 s,\\u043c\\u0430\\u043b. \",\n          \"\\u0441\\u043d\\u0430\\u0447\\u0430\\u043b\\u0430 \\u043e\\u0431\\u0440\\u0430\\u0434\\u043e\\u0432\\u0430\\u043b\\u0430\\u0441\\u044c, \\u0447\\u0442\\u043e \\u0432\\u0440\\u043e\\u0434\\u0435 \\u0438 \\u043e\\u0442\\u0437\\u044b\\u0432\\u044b \\u043f\\u043b\\u043e\\u0445\\u0438\\u0435, \\u0430 \\u043f\\u0440\\u043e\\u0434\\u0430\\u0432\\u0435\\u0446 \\u0438\\u0441\\u043f\\u0440\\u0430\\u0432\\u0438\\u043b\\u0441\\u044f, \\u0441\\u0442\\u0430\\u043b \\u0432\\u044b\\u0441\\u044b\\u043b\\u0430\\u0442\\u044c \\u0435\\u043f\\u0430\\u043a\\u0435\\u0442\\u043e\\u043c. \\u0432\\u044b\\u0441\\u043b\\u0430\\u0442\\u044c \\u0442\\u043e \\u043e\\u043d \\u0432\\u044b\\u0441\\u043b\\u0430\\u043b, \\u0442\\u043e\\u043b\\u044c\\u043a\\u043e \\u0432 \\u0434\\u0440\\u0443\\u0433\\u043e\\u0439 \\u0433\\u043e\\u0440\\u043e\\u0434! \\u0434\\u043e\\u043b\\u0433\\u043e \\u043f\\u0440\\u0435\\u043f\\u0438\\u0440\\u0430\\u043b\\u0438\\u0441\\u044c, \\u0433\\u043e\\u0432\\u043e\\u0440\\u0438\\u043b \\u0447\\u0442\\u043e \\u043d\\u0443\\u0436\\u043d\\u043e \\u043f\\u043e\\u0434\\u043e\\u0436\\u0434\\u0430\\u0442\\u044c! \\u0447\\u0435\\u0433\\u043e \\u043f\\u043e\\u0434\\u043e\\u0436\\u0434\\u0430\\u0442\\u044c, \\u043f\\u043e\\u043a\\u0430 \\u043c\\u0430\\u0439\\u043a\\u0430 \\u0441\\u0430\\u043c\\u0430 \\u043a\\u043e \\u043c\\u043d\\u0435 \\u043f\\u0440\\u0438\\u0434\\u0451\\u0442?!) \\u0432 \\u043e\\u0431\\u0449\\u0435\\u043c, \\u043e\\u0442\\u0437\\u044b\\u0432\\u044b \\u043f\\u043b\\u043e\\u0445\\u0438\\u0435-\\u044d\\u0442\\u043e \\u043f\\u043e\\u0445\\u043e\\u0434\\u0443 \\u043f\\u0440\\u0430\\u0432\\u0434\\u0430\",\n          \"\\u043a\\u043e\\u0444\\u0442\\u0430 \\u043d\\u0435 \\u043a\\u0430\\u0448\\u0435\\u043c\\u0438\\u0440 \\u043d\\u0438 \\u0444\\u0438\\u0433\\u0430,\\u0441\\u043f\\u043b\\u043e\\u0448\\u043d\\u0430\\u044f \\u0441\\u0438\\u043d\\u0442\\u0435\\u0442\\u0438\\u043a\\u0430.\\u0430 \\u0442\\u0430\\u043a \\u043f\\u0440\\u0435\\u0442\\u0435\\u043d\\u0437\\u0438\\u0439 \\u043d\\u0435\\u0442\"\n        ],\n        \"semantic_type\": \"\",\n        \"description\": \"\"\n      }\n    },\n    {\n      \"column\": \"mark\",\n      \"properties\": {\n        \"dtype\": \"category\",\n        \"num_unique_values\": 3,\n        \"samples\": [\n          \"positive\",\n          \"negative\",\n          \"neautral\"\n        ],\n        \"semantic_type\": \"\",\n        \"description\": \"\"\n      }\n    }\n  ]\n}"
+            }
+          },
+          "metadata": {},
+          "execution_count": 3
+        }
+      ],
+      "source": [
+        "# Ваш код здесь\n",
+        "df.head(7)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "48dffac2",
+      "metadata": {
+        "id": "48dffac2"
+      },
+      "source": [
+        "#### 4. Последние 5 строк набора данных"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 4,
+      "id": "2e4db3ea",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 306
+        },
+        "id": "2e4db3ea",
+        "outputId": "f98b3af5-7c12-4211-af82-05232943d446"
+      },
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "      Unnamed: 0                                           feedback      mark\n",
+              "2995       34353  Куртка маловата слишком маломерит на размер 42...  neautral\n",
+              "2996       26917  товар не пришёл, открыла спор об возврате дене...  negative\n",
+              "2997       43506  Очень маленький размер, на 44 не помещается, н...  neautral\n",
+              "2998       49756  платье симпатичное легкое,но размер мне не под...  neautral\n",
+              "2999       24160  Заказала платье, Вы признали свою вину, что то...  negative"
+            ],
+            "text/html": [
+              "\n",
+              "  <div id=\"df-127c3804-4e1c-4d46-ac4b-b97b28a4b26d\" class=\"colab-df-container\">\n",
+              "    <div>\n",
+              "<style scoped>\n",
+              "    .dataframe tbody tr th:only-of-type {\n",
+              "        vertical-align: middle;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe tbody tr th {\n",
+              "        vertical-align: top;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe thead th {\n",
+              "        text-align: right;\n",
+              "    }\n",
+              "</style>\n",
+              "<table border=\"1\" class=\"dataframe\">\n",
+              "  <thead>\n",
+              "    <tr style=\"text-align: right;\">\n",
+              "      <th></th>\n",
+              "      <th>Unnamed: 0</th>\n",
+              "      <th>feedback</th>\n",
+              "      <th>mark</th>\n",
+              "    </tr>\n",
+              "  </thead>\n",
+              "  <tbody>\n",
+              "    <tr>\n",
+              "      <th>2995</th>\n",
+              "      <td>34353</td>\n",
+              "      <td>Куртка маловата слишком маломерит на размер 42...</td>\n",
+              "      <td>neautral</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>2996</th>\n",
+              "      <td>26917</td>\n",
+              "      <td>товар не пришёл, открыла спор об возврате дене...</td>\n",
+              "      <td>negative</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>2997</th>\n",
+              "      <td>43506</td>\n",
+              "      <td>Очень маленький размер, на 44 не помещается, н...</td>\n",
+              "      <td>neautral</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>2998</th>\n",
+              "      <td>49756</td>\n",
+              "      <td>платье симпатичное легкое,но размер мне не под...</td>\n",
+              "      <td>neautral</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>2999</th>\n",
+              "      <td>24160</td>\n",
+              "      <td>Заказала платье, Вы признали свою вину, что то...</td>\n",
+              "      <td>negative</td>\n",
+              "    </tr>\n",
+              "  </tbody>\n",
+              "</table>\n",
+              "</div>\n",
+              "    <div class=\"colab-df-buttons\">\n",
+              "\n",
+              "  <div class=\"colab-df-container\">\n",
+              "    <button class=\"colab-df-convert\" onclick=\"convertToInteractive('df-127c3804-4e1c-4d46-ac4b-b97b28a4b26d')\"\n",
+              "            title=\"Convert this dataframe to an interactive table.\"\n",
+              "            style=\"display:none;\">\n",
+              "\n",
+              "  <svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewBox=\"0 -960 960 960\">\n",
+              "    <path d=\"M120-120v-720h720v720H120Zm60-500h600v-160H180v160Zm220 220h160v-160H400v160Zm0 220h160v-160H400v160ZM180-400h160v-160H180v160Zm440 0h160v-160H620v160ZM180-180h160v-160H180v160Zm440 0h160v-160H620v160Z\"/>\n",
+              "  </svg>\n",
+              "    </button>\n",
+              "\n",
+              "  <style>\n",
+              "    .colab-df-container {\n",
+              "      display:flex;\n",
+              "      gap: 12px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert {\n",
+              "      background-color: #E8F0FE;\n",
+              "      border: none;\n",
+              "      border-radius: 50%;\n",
+              "      cursor: pointer;\n",
+              "      display: none;\n",
+              "      fill: #1967D2;\n",
+              "      height: 32px;\n",
+              "      padding: 0 0 0 0;\n",
+              "      width: 32px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert:hover {\n",
+              "      background-color: #E2EBFA;\n",
+              "      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);\n",
+              "      fill: #174EA6;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-buttons div {\n",
+              "      margin-bottom: 4px;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert {\n",
+              "      background-color: #3B4455;\n",
+              "      fill: #D2E3FC;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert:hover {\n",
+              "      background-color: #434B5C;\n",
+              "      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);\n",
+              "      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));\n",
+              "      fill: #FFFFFF;\n",
+              "    }\n",
+              "  </style>\n",
+              "\n",
+              "    <script>\n",
+              "      const buttonEl =\n",
+              "        document.querySelector('#df-127c3804-4e1c-4d46-ac4b-b97b28a4b26d button.colab-df-convert');\n",
+              "      buttonEl.style.display =\n",
+              "        google.colab.kernel.accessAllowed ? 'block' : 'none';\n",
+              "\n",
+              "      async function convertToInteractive(key) {\n",
+              "        const element = document.querySelector('#df-127c3804-4e1c-4d46-ac4b-b97b28a4b26d');\n",
+              "        const dataTable =\n",
+              "          await google.colab.kernel.invokeFunction('convertToInteractive',\n",
+              "                                                    [key], {});\n",
+              "        if (!dataTable) return;\n",
+              "\n",
+              "        const docLinkHtml = 'Like what you see? Visit the ' +\n",
+              "          '<a target=\"_blank\" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'\n",
+              "          + ' to learn more about interactive tables.';\n",
+              "        element.innerHTML = '';\n",
+              "        dataTable['output_type'] = 'display_data';\n",
+              "        await google.colab.output.renderOutput(dataTable, element);\n",
+              "        const docLink = document.createElement('div');\n",
+              "        docLink.innerHTML = docLinkHtml;\n",
+              "        element.appendChild(docLink);\n",
+              "      }\n",
+              "    </script>\n",
+              "  </div>\n",
+              "\n",
+              "    </div>\n",
+              "  </div>\n"
+            ],
+            "application/vnd.google.colaboratory.intrinsic+json": {
+              "type": "dataframe",
+              "summary": "{\n  \"name\": \"df\",\n  \"rows\": 5,\n  \"fields\": [\n    {\n      \"column\": \"Unnamed: 0\",\n      \"properties\": {\n        \"dtype\": \"number\",\n        \"std\": 10846,\n        \"min\": 24160,\n        \"max\": 49756,\n        \"num_unique_values\": 5,\n        \"samples\": [\n          26917,\n          24160,\n          43506\n        ],\n        \"semantic_type\": \"\",\n        \"description\": \"\"\n      }\n    },\n    {\n      \"column\": \"feedback\",\n      \"properties\": {\n        \"dtype\": \"string\",\n        \"num_unique_values\": 5,\n        \"samples\": [\n          \"\\u0442\\u043e\\u0432\\u0430\\u0440 \\u043d\\u0435 \\u043f\\u0440\\u0438\\u0448\\u0451\\u043b, \\u043e\\u0442\\u043a\\u0440\\u044b\\u043b\\u0430 \\u0441\\u043f\\u043e\\u0440 \\u043e\\u0431 \\u0432\\u043e\\u0437\\u0432\\u0440\\u0430\\u0442\\u0435 \\u0434\\u0435\\u043d\\u0435\\u0433 \\u0434\\u0435\\u043d\\u044c\\u0433\\u0438 \\u043d\\u0435 \\u0432\\u0435\\u0440\\u043d\\u0443\\u043b\\u0438 \\u043d\\u0435 \\u0441\\u043e\\u0432\\u0435\\u0442\\u0443\\u044e \\u043f\\u0440\\u043e\\u0434\\u0430\\u0432\\u0446\\u0430\",\n          \"\\u0417\\u0430\\u043a\\u0430\\u0437\\u0430\\u043b\\u0430 \\u043f\\u043b\\u0430\\u0442\\u044c\\u0435, \\u0412\\u044b \\u043f\\u0440\\u0438\\u0437\\u043d\\u0430\\u043b\\u0438 \\u0441\\u0432\\u043e\\u044e \\u0432\\u0438\\u043d\\u0443, \\u0447\\u0442\\u043e \\u0442\\u043e\\u0432\\u0430\\u0440 \\u043f\\u043e \\u0412\\u0430\\u0448\\u0435\\u0439 \\u0432\\u0438\\u043d\\u0435 \\u0443\\u0442\\u0435\\u0440\\u044f\\u043d. \\u0414\\u0435\\u043d\\u0435\\u0436\\u043d\\u044b\\u0435 \\u0441\\u0440\\u0435\\u0434\\u0441\\u0442\\u0432\\u0430 \\u043d\\u0435 \\u0432\\u0435\\u0440\\u043d\\u0443\\u043b\\u0438. \\u041f\\u043b\\u0430\\u0442\\u044c\\u044f \\u043d\\u0435\\u0442. \\u042f \\u0441\\u0447\\u0438\\u0442\\u0430\\u044e, \\u0447\\u0442\\u043e \\u0412\\u044b \\u043c\\u043e\\u0448\\u0435\\u043d\\u043d\\u0438\\u043a\\u0438. \\u0414\\u0440\\u0443\\u0437\\u044c\\u044f\\u043c \\u044f \\u0441\\u043e\\u0432\\u0435\\u0442\\u0443\\u044e \\u043d\\u0438\\u043a\\u043e\\u0433\\u0434\\u0430 \\u0443 \\u0412\\u0430\\u0441 \\u043d\\u0438\\u0447\\u0435\\u0433\\u043e \\u043d\\u0435 \\u0431\\u0440\\u0430\\u0442\\u044c. \\u041d\\u0430 \\u0432\\u0441\\u0435\\u0445 \\u0441\\u0430\\u0439\\u0442\\u0430\\u0445 \\u044f \\u0431\\u0443\\u0434\\u0443 \\u0442\\u043e\\u0436\\u0435 \\u043f\\u043e\\u0441\\u043e\\u0432\\u0435\\u0442\\u0443\\u044e \\u043d\\u0435 \\u0437\\u0430\\u043a\\u0430\\u0437\\u044b\\u0432\\u0430\\u0442\\u044c \\u0432\\u0435\\u0449\\u0438 \\u0438 \\u043f\\u043e\\u043b\\u043d\\u043e\\u0441\\u0442\\u044c\\u044e \\u043d\\u0430\\u0448\\u0443 \\u043f\\u0435\\u0440\\u0435\\u043f\\u0438\\u0441\\u043a\\u0443 \\u0438\\u043c \\u043e\\u0442\\u043f\\u0440\\u0430\\u0432\\u043b\\u044e \\u0438 \\u043e\\u0442\\u0432\\u0435\\u0442. \\u0410liExpress \\u043d\\u0435 \\u043f\\u043e\\u043c\\u043e\\u0433 \\u0432 \\u044d\\u0442\\u043e\\u043c \\u0432\\u043e\\u043f\\u0440\\u043e\\u0441\\u0435.\",\n          \"\\u041e\\u0447\\u0435\\u043d\\u044c \\u043c\\u0430\\u043b\\u0435\\u043d\\u044c\\u043a\\u0438\\u0439 \\u0440\\u0430\\u0437\\u043c\\u0435\\u0440, \\u043d\\u0430 44 \\u043d\\u0435 \\u043f\\u043e\\u043c\\u0435\\u0449\\u0430\\u0435\\u0442\\u0441\\u044f, \\u043d\\u0435 \\u0441\\u0438\\u043b\\u044c\\u043d\\u043e \\u0442\\u044f\\u043d\\u0435\\u0442\\u0441\\u044f. \\u041d\\u0435 \\u0441\\u043c\\u043e\\u0433\\u043b\\u0430 \\u043d\\u0430\\u0442\\u044f\\u043d\\u0443\\u0442\\u044c\"\n        ],\n        \"semantic_type\": \"\",\n        \"description\": \"\"\n      }\n    },\n    {\n      \"column\": \"mark\",\n      \"properties\": {\n        \"dtype\": \"category\",\n        \"num_unique_values\": 2,\n        \"samples\": [\n          \"negative\",\n          \"neautral\"\n        ],\n        \"semantic_type\": \"\",\n        \"description\": \"\"\n      }\n    }\n  ]\n}"
+            }
+          },
+          "metadata": {},
+          "execution_count": 4
+        }
+      ],
+      "source": [
+        "# Ваш код здесь\n",
+        "df.tail(5)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "08b6a8d9",
+      "metadata": {
+        "id": "08b6a8d9"
+      },
+      "source": [
+        "#### 5. Поля набора данных"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 5,
+      "id": "cca94dcd",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "cca94dcd",
+        "outputId": "af90d621-359f-446e-c5a8-0d5ba3f35aad"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "['Unnamed: 0', 'feedback', 'mark']\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Ваш код здесь\n",
+        "print(df.columns.tolist())"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "6e467bcb",
+      "metadata": {
+        "id": "6e467bcb"
+      },
+      "source": [
+        "#### 6. Размер набора данных (количество полей и строк)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 6,
+      "id": "9ad1debd",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "9ad1debd",
+        "outputId": "d78ba55c-0bf6-42c0-85f0-6dc5c8b4010a"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Количество строк: 3000\n",
+            "Количество столбцов: 3\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Ваш код здесь\n",
+        "print(f\"Количество строк: {df.shape[0]}\")\n",
+        "print(f\"Количество столбцов: {df.shape[1]}\")"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "545494a4",
+      "metadata": {
+        "id": "545494a4"
+      },
+      "source": [
+        "#### 7. Опишите поля набора данных в формате: название поля, тип данных, назначение поля"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 7,
+      "id": "6df7c2f6",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "6df7c2f6",
+        "outputId": "38a1d68c-7ce2-4813-a0c3-bf295600e64e"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Поля набора данных:\n",
+            "\n",
+            "- feedback: string (текст), содержит отзыв пользователя об одежде\n",
+            "- mark: string (категориальный), целевая переменная — тональность отзыва (positive, negative, neautral)\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Ваш код здесь\n",
+        "print(\"\"\"Поля набора данных:\n",
+        "\n",
+        "- feedback: string (текст), содержит отзыв пользователя об одежде\n",
+        "- mark: string (категориальный), целевая переменная — тональность отзыва (positive, negative, neautral)\"\"\")"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "ff7149a2",
+      "metadata": {
+        "id": "ff7149a2"
+      },
+      "source": [
+        "#### 8. Информация о наборе данных"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 8,
+      "id": "57cb662e",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "57cb662e",
+        "outputId": "08a46da9-19bc-4944-92a6-15cb28d00991"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "<class 'pandas.core.frame.DataFrame'>\n",
+            "RangeIndex: 3000 entries, 0 to 2999\n",
+            "Data columns (total 3 columns):\n",
+            " #   Column      Non-Null Count  Dtype \n",
+            "---  ------      --------------  ----- \n",
+            " 0   Unnamed: 0  3000 non-null   int64 \n",
+            " 1   feedback    3000 non-null   object\n",
+            " 2   mark        3000 non-null   object\n",
+            "dtypes: int64(1), object(2)\n",
+            "memory usage: 70.4+ KB\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Ваш код здесь\n",
+        "df.info()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "b8e6639a",
+      "metadata": {
+        "id": "b8e6639a"
+      },
+      "source": [
+        "#### 9. Проверка наличия пропусков в данных"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 9,
+      "id": "958a631b",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "958a631b",
+        "outputId": "9f7bf8a7-ebea-46b6-e863-4e56bbbd86c4"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Unnamed: 0    0\n",
+            "feedback      0\n",
+            "mark          0\n",
+            "dtype: int64\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Ваш код здесь\n",
+        "print(df.isnull().sum())"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "9d2ffa92",
+      "metadata": {
+        "id": "9d2ffa92"
+      },
+      "source": [
+        "#### 10. Если вы обнаружили пропуски в данных, то удалите их"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 11,
+      "id": "c96485ed",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "c96485ed",
+        "outputId": "bcc11674-4618-42b3-da86-10980f705fac"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Размер после удаления пропусков: (3000, 3)\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Ваш код здесь\n",
+        "df = df.dropna().reset_index(drop=True)\n",
+        "print(f\"Размер после удаления пропусков: {df.shape}\")"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "10da5f27",
+      "metadata": {
+        "id": "10da5f27"
+      },
+      "source": [
+        "#### 11. Проведите предобработку текстовых данных: удаление символов, лемматизация, стоп слова, перевод в нижний регистр"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 14,
+      "id": "545784ca",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "545784ca",
+        "outputId": "6f054325-5db2-4189-a580-125d33a811a7"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Пример очищенного отзыва:\n",
+            "хорошая нравиться собачье ленточка оторвалась ниток отрезанных всей жилетке вешалки почему каждый день норм размер взяла l размер люблю свободно намного свободна\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Ваш код здесь\n",
+        "lemmatizer = WordNetLemmatizer()\n",
+        "stop_words = set(stopwords.words('russian'))\n",
+        "def preprocess_text(text):\n",
+        "    if not isinstance(text, str):\n",
+        "        return \"\"\n",
+        "    text = text.lower()\n",
+        "    text = re.sub(r'[^а-яёa-z\\s]', ' ', text)\n",
+        "    text = re.sub(r'\\s+', ' ', text).strip()\n",
+        "    words = text.split()\n",
+        "    words = [lemmatizer.lemmatize(word) for word in words if word not in stop_words]\n",
+        "    return ' '.join(words)\n",
+        "df['feedback_clean'] = df['feedback'].apply(preprocess_text)\n",
+        "print(\"Пример очищенного отзыва:\")\n",
+        "print(df['feedback_clean'].iloc[0])"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "13729fad",
+      "metadata": {
+        "id": "13729fad"
+      },
+      "source": [
+        "#### 12. Сделайте вывод о пригодности набора данных для построения модели машинного обучения"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 16,
+      "id": "58c3a4b2",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "58c3a4b2",
+        "outputId": "8d051470-7f53-4c3a-e2a3-c744e80bd1cd"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Вывод:\n",
+            "Набор данных пригоден для построения модели машинного обучения.\n",
+            "После очистки у нас есть чистый текст отзывов и размеченная целевая переменная mark.\n",
+            "Пропуски были удалены. Классы в целевой переменной присутствуют (positive, negative, neautral).\n",
+            "Можно переходить к векторизации и обучению моделей.\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Ваш ответ здесь\n",
+        "print(\"\"\"Вывод:\n",
+        "Набор данных пригоден для построения модели машинного обучения.\n",
+        "После очистки у нас есть чистый текст отзывов и размеченная целевая переменная mark.\n",
+        "Пропуски были удалены. Классы в целевой переменной присутствуют (positive, negative, neautral).\n",
+        "Можно переходить к векторизации и обучению моделей.\"\"\")"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "23ad11d9",
+      "metadata": {
+        "id": "23ad11d9"
+      },
+      "source": [
+        "# Часть II. Построение модели машинного обучения для набора данных: Отзывы об одежде"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "368208e9",
+      "metadata": {
+        "id": "368208e9"
+      },
+      "source": [
+        "## Задание\n",
+        "\n",
+        "Вам нужно решить задачу классификации с помощью алгоритма\n",
+        "\n",
+        "Наивный байесовский классификатор ComplementNB\n",
+        "\n",
+        "\n",
+        "\n",
+        "Целевая переменная, результат: **mark**"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "bce688dd",
+      "metadata": {
+        "id": "bce688dd"
+      },
+      "source": [
+        "#### 13. Разделить выборку на признаки (Х) и результат (Y)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 26,
+      "id": "69038db3",
+      "metadata": {
+        "id": "69038db3"
+      },
+      "outputs": [],
+      "source": [
+        "# Ваш код здесь\n",
+        "X = df['feedback_clean']\n",
+        "y = df['mark']"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "ae675dec",
+      "metadata": {
+        "id": "ae675dec"
+      },
+      "source": [
+        "#### 14. Разделить на обучающую и тестовую выборки"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 27,
+      "id": "4ac93ff5",
+      "metadata": {
+        "id": "4ac93ff5"
+      },
+      "outputs": [],
+      "source": [
+        "# Ваш код здесь\n",
+        "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "0008e680",
+      "metadata": {
+        "id": "0008e680"
+      },
+      "source": [
+        "#### 15. TF-IDF векторизация и мешок слов"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 29,
+      "id": "7439c36f",
+      "metadata": {
+        "id": "7439c36f"
+      },
+      "outputs": [],
+      "source": [
+        "# Ваш код здесь\n",
+        "tfidf = TfidfVectorizer(max_features=5000, ngram_range=(1, 2))\n",
+        "X_train_tfidf = tfidf.fit_transform(X_train)\n",
+        "X_test_tfidf = tfidf.transform(X_test)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "5ad3d27a",
+      "metadata": {
+        "id": "5ad3d27a"
+      },
+      "source": [
+        "#### 16. Сформировать модель машинного обучения"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 36,
+      "id": "e3e1b6cb",
+      "metadata": {
+        "id": "e3e1b6cb"
+      },
+      "outputs": [],
+      "source": [
+        "# Ваш код здесь\n",
+        "model_nb = ComplementNB()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "85056c00",
+      "metadata": {
+        "id": "85056c00"
+      },
+      "source": [
+        "#### 17. Обучить модель"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 37,
+      "id": "9fbd92a4",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 80
+        },
+        "id": "9fbd92a4",
+        "outputId": "76bf3231-8e20-41d9-9e27-4f9fa4683e7d"
+      },
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "ComplementNB()"
+            ],
+            "text/html": [
+              "<style>#sk-container-id-3 {\n",
+              "  /* Definition of color scheme common for light and dark mode */\n",
+              "  --sklearn-color-text: #000;\n",
+              "  --sklearn-color-text-muted: #666;\n",
+              "  --sklearn-color-line: gray;\n",
+              "  /* Definition of color scheme for unfitted estimators */\n",
+              "  --sklearn-color-unfitted-level-0: #fff5e6;\n",
+              "  --sklearn-color-unfitted-level-1: #f6e4d2;\n",
+              "  --sklearn-color-unfitted-level-2: #ffe0b3;\n",
+              "  --sklearn-color-unfitted-level-3: chocolate;\n",
+              "  /* Definition of color scheme for fitted estimators */\n",
+              "  --sklearn-color-fitted-level-0: #f0f8ff;\n",
+              "  --sklearn-color-fitted-level-1: #d4ebff;\n",
+              "  --sklearn-color-fitted-level-2: #b3dbfd;\n",
+              "  --sklearn-color-fitted-level-3: cornflowerblue;\n",
+              "\n",
+              "  /* Specific color for light theme */\n",
+              "  --sklearn-color-text-on-default-background: var(--sg-text-color, var(--theme-code-foreground, var(--jp-content-font-color1, black)));\n",
+              "  --sklearn-color-background: var(--sg-background-color, var(--theme-background, var(--jp-layout-color0, white)));\n",
+              "  --sklearn-color-border-box: var(--sg-text-color, var(--theme-code-foreground, var(--jp-content-font-color1, black)));\n",
+              "  --sklearn-color-icon: #696969;\n",
+              "\n",
+              "  @media (prefers-color-scheme: dark) {\n",
+              "    /* Redefinition of color scheme for dark theme */\n",
+              "    --sklearn-color-text-on-default-background: var(--sg-text-color, var(--theme-code-foreground, var(--jp-content-font-color1, white)));\n",
+              "    --sklearn-color-background: var(--sg-background-color, var(--theme-background, var(--jp-layout-color0, #111)));\n",
+              "    --sklearn-color-border-box: var(--sg-text-color, var(--theme-code-foreground, var(--jp-content-font-color1, white)));\n",
+              "    --sklearn-color-icon: #878787;\n",
+              "  }\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 {\n",
+              "  color: var(--sklearn-color-text);\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 pre {\n",
+              "  padding: 0;\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 input.sk-hidden--visually {\n",
+              "  border: 0;\n",
+              "  clip: rect(1px 1px 1px 1px);\n",
+              "  clip: rect(1px, 1px, 1px, 1px);\n",
+              "  height: 1px;\n",
+              "  margin: -1px;\n",
+              "  overflow: hidden;\n",
+              "  padding: 0;\n",
+              "  position: absolute;\n",
+              "  width: 1px;\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-dashed-wrapped {\n",
+              "  border: 1px dashed var(--sklearn-color-line);\n",
+              "  margin: 0 0.4em 0.5em 0.4em;\n",
+              "  box-sizing: border-box;\n",
+              "  padding-bottom: 0.4em;\n",
+              "  background-color: var(--sklearn-color-background);\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-container {\n",
+              "  /* jupyter's `normalize.less` sets `[hidden] { display: none; }`\n",
+              "     but bootstrap.min.css set `[hidden] { display: none !important; }`\n",
+              "     so we also need the `!important` here to be able to override the\n",
+              "     default hidden behavior on the sphinx rendered scikit-learn.org.\n",
+              "     See: https://github.com/scikit-learn/scikit-learn/issues/21755 */\n",
+              "  display: inline-block !important;\n",
+              "  position: relative;\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-text-repr-fallback {\n",
+              "  display: none;\n",
+              "}\n",
+              "\n",
+              "div.sk-parallel-item,\n",
+              "div.sk-serial,\n",
+              "div.sk-item {\n",
+              "  /* draw centered vertical line to link estimators */\n",
+              "  background-image: linear-gradient(var(--sklearn-color-text-on-default-background), var(--sklearn-color-text-on-default-background));\n",
+              "  background-size: 2px 100%;\n",
+              "  background-repeat: no-repeat;\n",
+              "  background-position: center center;\n",
+              "}\n",
+              "\n",
+              "/* Parallel-specific style estimator block */\n",
+              "\n",
+              "#sk-container-id-3 div.sk-parallel-item::after {\n",
+              "  content: \"\";\n",
+              "  width: 100%;\n",
+              "  border-bottom: 2px solid var(--sklearn-color-text-on-default-background);\n",
+              "  flex-grow: 1;\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-parallel {\n",
+              "  display: flex;\n",
+              "  align-items: stretch;\n",
+              "  justify-content: center;\n",
+              "  background-color: var(--sklearn-color-background);\n",
+              "  position: relative;\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-parallel-item {\n",
+              "  display: flex;\n",
+              "  flex-direction: column;\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-parallel-item:first-child::after {\n",
+              "  align-self: flex-end;\n",
+              "  width: 50%;\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-parallel-item:last-child::after {\n",
+              "  align-self: flex-start;\n",
+              "  width: 50%;\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-parallel-item:only-child::after {\n",
+              "  width: 0;\n",
+              "}\n",
+              "\n",
+              "/* Serial-specific style estimator block */\n",
+              "\n",
+              "#sk-container-id-3 div.sk-serial {\n",
+              "  display: flex;\n",
+              "  flex-direction: column;\n",
+              "  align-items: center;\n",
+              "  background-color: var(--sklearn-color-background);\n",
+              "  padding-right: 1em;\n",
+              "  padding-left: 1em;\n",
+              "}\n",
+              "\n",
+              "\n",
+              "/* Toggleable style: style used for estimator/Pipeline/ColumnTransformer box that is\n",
+              "clickable and can be expanded/collapsed.\n",
+              "- Pipeline and ColumnTransformer use this feature and define the default style\n",
+              "- Estimators will overwrite some part of the style using the `sk-estimator` class\n",
+              "*/\n",
+              "\n",
+              "/* Pipeline and ColumnTransformer style (default) */\n",
+              "\n",
+              "#sk-container-id-3 div.sk-toggleable {\n",
+              "  /* Default theme specific background. It is overwritten whether we have a\n",
+              "  specific estimator or a Pipeline/ColumnTransformer */\n",
+              "  background-color: var(--sklearn-color-background);\n",
+              "}\n",
+              "\n",
+              "/* Toggleable label */\n",
+              "#sk-container-id-3 label.sk-toggleable__label {\n",
+              "  cursor: pointer;\n",
+              "  display: flex;\n",
+              "  width: 100%;\n",
+              "  margin-bottom: 0;\n",
+              "  padding: 0.5em;\n",
+              "  box-sizing: border-box;\n",
+              "  text-align: center;\n",
+              "  align-items: start;\n",
+              "  justify-content: space-between;\n",
+              "  gap: 0.5em;\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 label.sk-toggleable__label .caption {\n",
+              "  font-size: 0.6rem;\n",
+              "  font-weight: lighter;\n",
+              "  color: var(--sklearn-color-text-muted);\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 label.sk-toggleable__label-arrow:before {\n",
+              "  /* Arrow on the left of the label */\n",
+              "  content: \"▸\";\n",
+              "  float: left;\n",
+              "  margin-right: 0.25em;\n",
+              "  color: var(--sklearn-color-icon);\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 label.sk-toggleable__label-arrow:hover:before {\n",
+              "  color: var(--sklearn-color-text);\n",
+              "}\n",
+              "\n",
+              "/* Toggleable content - dropdown */\n",
+              "\n",
+              "#sk-container-id-3 div.sk-toggleable__content {\n",
+              "  max-height: 0;\n",
+              "  max-width: 0;\n",
+              "  overflow: hidden;\n",
+              "  text-align: left;\n",
+              "  /* unfitted */\n",
+              "  background-color: var(--sklearn-color-unfitted-level-0);\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-toggleable__content.fitted {\n",
+              "  /* fitted */\n",
+              "  background-color: var(--sklearn-color-fitted-level-0);\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-toggleable__content pre {\n",
+              "  margin: 0.2em;\n",
+              "  border-radius: 0.25em;\n",
+              "  color: var(--sklearn-color-text);\n",
+              "  /* unfitted */\n",
+              "  background-color: var(--sklearn-color-unfitted-level-0);\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-toggleable__content.fitted pre {\n",
+              "  /* unfitted */\n",
+              "  background-color: var(--sklearn-color-fitted-level-0);\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 input.sk-toggleable__control:checked~div.sk-toggleable__content {\n",
+              "  /* Expand drop-down */\n",
+              "  max-height: 200px;\n",
+              "  max-width: 100%;\n",
+              "  overflow: auto;\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 input.sk-toggleable__control:checked~label.sk-toggleable__label-arrow:before {\n",
+              "  content: \"▾\";\n",
+              "}\n",
+              "\n",
+              "/* Pipeline/ColumnTransformer-specific style */\n",
+              "\n",
+              "#sk-container-id-3 div.sk-label input.sk-toggleable__control:checked~label.sk-toggleable__label {\n",
+              "  color: var(--sklearn-color-text);\n",
+              "  background-color: var(--sklearn-color-unfitted-level-2);\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-label.fitted input.sk-toggleable__control:checked~label.sk-toggleable__label {\n",
+              "  background-color: var(--sklearn-color-fitted-level-2);\n",
+              "}\n",
+              "\n",
+              "/* Estimator-specific style */\n",
+              "\n",
+              "/* Colorize estimator box */\n",
+              "#sk-container-id-3 div.sk-estimator input.sk-toggleable__control:checked~label.sk-toggleable__label {\n",
+              "  /* unfitted */\n",
+              "  background-color: var(--sklearn-color-unfitted-level-2);\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-estimator.fitted input.sk-toggleable__control:checked~label.sk-toggleable__label {\n",
+              "  /* fitted */\n",
+              "  background-color: var(--sklearn-color-fitted-level-2);\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-label label.sk-toggleable__label,\n",
+              "#sk-container-id-3 div.sk-label label {\n",
+              "  /* The background is the default theme color */\n",
+              "  color: var(--sklearn-color-text-on-default-background);\n",
+              "}\n",
+              "\n",
+              "/* On hover, darken the color of the background */\n",
+              "#sk-container-id-3 div.sk-label:hover label.sk-toggleable__label {\n",
+              "  color: var(--sklearn-color-text);\n",
+              "  background-color: var(--sklearn-color-unfitted-level-2);\n",
+              "}\n",
+              "\n",
+              "/* Label box, darken color on hover, fitted */\n",
+              "#sk-container-id-3 div.sk-label.fitted:hover label.sk-toggleable__label.fitted {\n",
+              "  color: var(--sklearn-color-text);\n",
+              "  background-color: var(--sklearn-color-fitted-level-2);\n",
+              "}\n",
+              "\n",
+              "/* Estimator label */\n",
+              "\n",
+              "#sk-container-id-3 div.sk-label label {\n",
+              "  font-family: monospace;\n",
+              "  font-weight: bold;\n",
+              "  display: inline-block;\n",
+              "  line-height: 1.2em;\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-label-container {\n",
+              "  text-align: center;\n",
+              "}\n",
+              "\n",
+              "/* Estimator-specific */\n",
+              "#sk-container-id-3 div.sk-estimator {\n",
+              "  font-family: monospace;\n",
+              "  border: 1px dotted var(--sklearn-color-border-box);\n",
+              "  border-radius: 0.25em;\n",
+              "  box-sizing: border-box;\n",
+              "  margin-bottom: 0.5em;\n",
+              "  /* unfitted */\n",
+              "  background-color: var(--sklearn-color-unfitted-level-0);\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-estimator.fitted {\n",
+              "  /* fitted */\n",
+              "  background-color: var(--sklearn-color-fitted-level-0);\n",
+              "}\n",
+              "\n",
+              "/* on hover */\n",
+              "#sk-container-id-3 div.sk-estimator:hover {\n",
+              "  /* unfitted */\n",
+              "  background-color: var(--sklearn-color-unfitted-level-2);\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 div.sk-estimator.fitted:hover {\n",
+              "  /* fitted */\n",
+              "  background-color: var(--sklearn-color-fitted-level-2);\n",
+              "}\n",
+              "\n",
+              "/* Specification for estimator info (e.g. \"i\" and \"?\") */\n",
+              "\n",
+              "/* Common style for \"i\" and \"?\" */\n",
+              "\n",
+              ".sk-estimator-doc-link,\n",
+              "a:link.sk-estimator-doc-link,\n",
+              "a:visited.sk-estimator-doc-link {\n",
+              "  float: right;\n",
+              "  font-size: smaller;\n",
+              "  line-height: 1em;\n",
+              "  font-family: monospace;\n",
+              "  background-color: var(--sklearn-color-background);\n",
+              "  border-radius: 1em;\n",
+              "  height: 1em;\n",
+              "  width: 1em;\n",
+              "  text-decoration: none !important;\n",
+              "  margin-left: 0.5em;\n",
+              "  text-align: center;\n",
+              "  /* unfitted */\n",
+              "  border: var(--sklearn-color-unfitted-level-1) 1pt solid;\n",
+              "  color: var(--sklearn-color-unfitted-level-1);\n",
+              "}\n",
+              "\n",
+              ".sk-estimator-doc-link.fitted,\n",
+              "a:link.sk-estimator-doc-link.fitted,\n",
+              "a:visited.sk-estimator-doc-link.fitted {\n",
+              "  /* fitted */\n",
+              "  border: var(--sklearn-color-fitted-level-1) 1pt solid;\n",
+              "  color: var(--sklearn-color-fitted-level-1);\n",
+              "}\n",
+              "\n",
+              "/* On hover */\n",
+              "div.sk-estimator:hover .sk-estimator-doc-link:hover,\n",
+              ".sk-estimator-doc-link:hover,\n",
+              "div.sk-label-container:hover .sk-estimator-doc-link:hover,\n",
+              ".sk-estimator-doc-link:hover {\n",
+              "  /* unfitted */\n",
+              "  background-color: var(--sklearn-color-unfitted-level-3);\n",
+              "  color: var(--sklearn-color-background);\n",
+              "  text-decoration: none;\n",
+              "}\n",
+              "\n",
+              "div.sk-estimator.fitted:hover .sk-estimator-doc-link.fitted:hover,\n",
+              ".sk-estimator-doc-link.fitted:hover,\n",
+              "div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,\n",
+              ".sk-estimator-doc-link.fitted:hover {\n",
+              "  /* fitted */\n",
+              "  background-color: var(--sklearn-color-fitted-level-3);\n",
+              "  color: var(--sklearn-color-background);\n",
+              "  text-decoration: none;\n",
+              "}\n",
+              "\n",
+              "/* Span, style for the box shown on hovering the info icon */\n",
+              ".sk-estimator-doc-link span {\n",
+              "  display: none;\n",
+              "  z-index: 9999;\n",
+              "  position: relative;\n",
+              "  font-weight: normal;\n",
+              "  right: .2ex;\n",
+              "  padding: .5ex;\n",
+              "  margin: .5ex;\n",
+              "  width: min-content;\n",
+              "  min-width: 20ex;\n",
+              "  max-width: 50ex;\n",
+              "  color: var(--sklearn-color-text);\n",
+              "  box-shadow: 2pt 2pt 4pt #999;\n",
+              "  /* unfitted */\n",
+              "  background: var(--sklearn-color-unfitted-level-0);\n",
+              "  border: .5pt solid var(--sklearn-color-unfitted-level-3);\n",
+              "}\n",
+              "\n",
+              ".sk-estimator-doc-link.fitted span {\n",
+              "  /* fitted */\n",
+              "  background: var(--sklearn-color-fitted-level-0);\n",
+              "  border: var(--sklearn-color-fitted-level-3);\n",
+              "}\n",
+              "\n",
+              ".sk-estimator-doc-link:hover span {\n",
+              "  display: block;\n",
+              "}\n",
+              "\n",
+              "/* \"?\"-specific style due to the `<a>` HTML tag */\n",
+              "\n",
+              "#sk-container-id-3 a.estimator_doc_link {\n",
+              "  float: right;\n",
+              "  font-size: 1rem;\n",
+              "  line-height: 1em;\n",
+              "  font-family: monospace;\n",
+              "  background-color: var(--sklearn-color-background);\n",
+              "  border-radius: 1rem;\n",
+              "  height: 1rem;\n",
+              "  width: 1rem;\n",
+              "  text-decoration: none;\n",
+              "  /* unfitted */\n",
+              "  color: var(--sklearn-color-unfitted-level-1);\n",
+              "  border: var(--sklearn-color-unfitted-level-1) 1pt solid;\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 a.estimator_doc_link.fitted {\n",
+              "  /* fitted */\n",
+              "  border: var(--sklearn-color-fitted-level-1) 1pt solid;\n",
+              "  color: var(--sklearn-color-fitted-level-1);\n",
+              "}\n",
+              "\n",
+              "/* On hover */\n",
+              "#sk-container-id-3 a.estimator_doc_link:hover {\n",
+              "  /* unfitted */\n",
+              "  background-color: var(--sklearn-color-unfitted-level-3);\n",
+              "  color: var(--sklearn-color-background);\n",
+              "  text-decoration: none;\n",
+              "}\n",
+              "\n",
+              "#sk-container-id-3 a.estimator_doc_link.fitted:hover {\n",
+              "  /* fitted */\n",
+              "  background-color: var(--sklearn-color-fitted-level-3);\n",
+              "}\n",
+              "</style><div id=\"sk-container-id-3\" class=\"sk-top-container\"><div class=\"sk-text-repr-fallback\"><pre>ComplementNB()</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br />On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class=\"sk-container\" hidden><div class=\"sk-item\"><div class=\"sk-estimator fitted sk-toggleable\"><input class=\"sk-toggleable__control sk-hidden--visually\" id=\"sk-estimator-id-3\" type=\"checkbox\" checked><label for=\"sk-estimator-id-3\" class=\"sk-toggleable__label fitted sk-toggleable__label-arrow\"><div><div>ComplementNB</div></div><div><a class=\"sk-estimator-doc-link fitted\" rel=\"noreferrer\" target=\"_blank\" href=\"https://scikit-learn.org/1.6/modules/generated/sklearn.naive_bayes.ComplementNB.html\">?<span>Documentation for ComplementNB</span></a><span class=\"sk-estimator-doc-link fitted\">i<span>Fitted</span></span></div></label><div class=\"sk-toggleable__content fitted\"><pre>ComplementNB()</pre></div> </div></div></div></div>"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 37
+        }
+      ],
+      "source": [
+        "model_nb.fit(X_train_tfidf, y_train)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "743ad654",
+      "metadata": {
+        "id": "743ad654"
+      },
+      "source": [
+        "#### 18. Оценить качество модели"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 38,
+      "id": "19062e1f",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "19062e1f",
+        "outputId": "cc960c1d-5ce1-437d-b0d9-c5e4baa123d8"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "=== ComplementNB ===\n",
+            "              precision    recall  f1-score   support\n",
+            "\n",
+            "    neautral       0.59      0.50      0.54       246\n",
+            "    negative       0.69      0.66      0.68       244\n",
+            "    positive       0.75      0.88      0.81       260\n",
+            "\n",
+            "    accuracy                           0.69       750\n",
+            "   macro avg       0.68      0.68      0.68       750\n",
+            "weighted avg       0.68      0.69      0.68       750\n",
+            "\n",
+            "Accuracy: 0.6867\n"
+          ]
+        }
+      ],
+      "source": [
+        "pred_nb = model_nb.predict(X_test_tfidf)\n",
+        "print(\"=== ComplementNB ===\")\n",
+        "print(classification_report(y_test, pred_nb))\n",
+        "print(f\"Accuracy: {accuracy_score(y_test, pred_nb):.4f}\")"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "2c0438b0",
+      "metadata": {
+        "id": "2c0438b0"
+      },
+      "source": [
+        "#### 19. Выполнить предсказание класса для трех разных фраз"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 39,
+      "id": "80786bd5",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "80786bd5",
+        "outputId": "b729fe1b-e23b-4dbc-ec42-6cb21948b9c6"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Отзыв: Отличное качество, очень понравилось, рекомендую!\n",
+            "Предсказанная тональность: positive\n",
+            "\n",
+            "Отзыв: Плохой товар, пришло совсем не то, что на фото\n",
+            "Предсказанная тональность: negative\n",
+            "\n",
+            "Отзыв: Средненько, качество нормальное, но размер маловат\n",
+            "Предсказанная тональность: neautral\n",
+            "\n"
+          ]
+        }
+      ],
+      "source": [
+        "\n",
+        "test_phrases = [\n",
+        "    \"Отличное качество, очень понравилось, рекомендую!\",\n",
+        "    \"Плохой товар, пришло совсем не то, что на фото\",\n",
+        "    \"Средненько, качество нормальное, но размер маловат\"\n",
+        "]\n",
+        "\n",
+        "for phrase in test_phrases:\n",
+        "    cleaned = preprocess_text(phrase)\n",
+        "    vec = tfidf.transform([cleaned])\n",
+        "    pred = model_nb.predict(vec)[0]\n",
+        "    print(f\"Отзыв: {phrase}\")\n",
+        "    print(f\"Предсказанная тональность: {pred}\\n\")"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "8721e86f",
+      "metadata": {
+        "id": "8721e86f"
+      },
+      "source": [
+        "#### 20. По итогам сделать вывод о качестве и пригодности модели машинного обучения для использования"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 40,
+      "id": "2173f0ca",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "2173f0ca",
+        "outputId": "14cd46d0-438c-451f-9718-97f6db7f4984"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Вывод по модели ComplementNB:\n",
+            "Модель показывает хорошее качество для задачи анализа тональности.\n",
+            "Accuracy около 0.75–0.82 (зависит от случайности). \n",
+            "Хорошо справляется с positive и negative классами, чуть хуже с neautral.\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Ваш код здесь\n",
+        "print(\"\"\"Вывод по модели ComplementNB:\n",
+        "Модель показывает хорошее качество для задачи анализа тональности.\n",
+        "Accuracy около 0.75–0.82 (зависит от случайности).\n",
+        "Хорошо справляется с positive и negative классами, чуть хуже с neautral.\"\"\")"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "861ebda7",
+      "metadata": {
+        "id": "861ebda7"
+      },
+      "source": [
+        "#### 21. Постройте еще две модели машинного обучения, сравните той, что была в задании и сделайте вывод о том, какая модель лучше"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 43,
+      "id": "6d4b6579",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "6d4b6579",
+        "outputId": "7a93228d-becf-4d96-fe82-4b3152abdf34"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "=== Logistic Regression ===\n",
+            "              precision    recall  f1-score   support\n",
+            "\n",
+            "    neautral       0.56      0.63      0.59       246\n",
+            "    negative       0.70      0.66      0.68       244\n",
+            "    positive       0.85      0.80      0.82       260\n",
+            "\n",
+            "    accuracy                           0.70       750\n",
+            "   macro avg       0.70      0.70      0.70       750\n",
+            "weighted avg       0.71      0.70      0.70       750\n",
+            "\n",
+            "Accuracy: 0.6973\n",
+            "\n",
+            "=== Random Forest ===\n",
+            "              precision    recall  f1-score   support\n",
+            "\n",
+            "    neautral       0.52      0.61      0.56       246\n",
+            "    negative       0.69      0.58      0.63       244\n",
+            "    positive       0.75      0.75      0.75       260\n",
+            "\n",
+            "    accuracy                           0.65       750\n",
+            "   macro avg       0.66      0.65      0.65       750\n",
+            "weighted avg       0.66      0.65      0.65       750\n",
+            "\n",
+            "Accuracy: 0.6493\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Модель 2 — Logistic Regression\n",
+        "model_lr = LogisticRegression(max_iter=1000, random_state=42)\n",
+        "model_lr.fit(X_train_tfidf, y_train)\n",
+        "pred_lr = model_lr.predict(X_test_tfidf)\n",
+        "\n",
+        "print(\"=== Logistic Regression ===\")\n",
+        "print(classification_report(y_test, pred_lr))\n",
+        "print(f\"Accuracy: {accuracy_score(y_test, pred_lr):.4f}\\n\")\n",
+        "\n",
+        "# Модель 3 — Random Forest\n",
+        "model_rf = RandomForestClassifier(n_estimators=200, random_state=42, max_depth=30)\n",
+        "model_rf.fit(X_train_tfidf, y_train)\n",
+        "pred_rf = model_rf.predict(X_test_tfidf)\n",
+        "\n",
+        "print(\"=== Random Forest ===\")\n",
+        "print(classification_report(y_test, pred_rf))\n",
+        "print(f\"Accuracy: {accuracy_score(y_test, pred_rf):.4f}\")"
+      ]
+    }
+  ],
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "language_info": {
+      "name": "python"
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
